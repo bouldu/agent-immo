@@ -1,0 +1,64 @@
+# Nom du projet
+project_name = "AgentImmo"
+
+# Documentation de référence
+# IMPORTANT: Toujours consulter README.md pour comprendre le contexte complet du projet,
+# les objectifs, la stack technique, les spécifications des agents LangGraph,
+# la structure de l'API, et les instructions de développement.
+# Le README.md contient toutes les informations essentielles sur le projet AgentImmo.
+
+# Langage principal
+language = "python"
+
+# Gestionnaire de dépendances
+dependency_manager = "poetry"
+
+# Formatter à utiliser
+formatter = "ruff"
+
+# Framework backend
+backend_framework = "fastapi"
+
+# Stack frontend
+frontend_framework = "svelte"
+frontend_css = "tailwindcss"
+
+# Structure de projet souhaitée
+directory_structure = [
+    "backend/api/endpoints",
+    "backend/api/models",
+    "backend/agents",
+    "backend/utils",
+    "frontend",
+    "tests"
+]
+
+# Modules à générer
+modules = [
+    { name = "main", path = "backend/api/main.py", template = "fastapi_main" },
+    { name = "analyze", path = "backend/api/endpoints/analyze.py", template = "fastapi_endpoint" },
+    { name = "status", path = "backend/api/endpoints/status.py", template = "fastapi_endpoint" },
+    { name = "report", path = "backend/api/endpoints/report.py", template = "fastapi_endpoint" },
+    { name = "request_models", path = "backend/api/models/request.py", template = "pydantic_model" },
+    { name = "response_models", path = "backend/api/models/response.py", template = "pydantic_model" },
+    { name = "data_collector", path = "backend/agents/data_collector.py", template = "langgraph_agent" },
+    { name = "analyzer", path = "backend/agents/analyzer.py", template = "langgraph_agent" },
+    { name = "visualizer", path = "backend/agents/visualizer.py", template = "langgraph_agent" },
+    { name = "report_builder", path = "backend/agents/report_builder.py", template = "langgraph_agent" },
+    { name = "pdf_generator", path = "backend/utils/pdf_generator.py", template = "utility_module" },
+    { name = "plotting", path = "backend/utils/plotting.py", template = "utility_module" }
+]
+
+# Config spécifique LangGraph
+langgraph = { use = true, default_agent_class = "BaseAgent", state_management = "LangSmith" }
+
+# Notes pour Cursor
+notes = """
+0. Répondre en français dans le chat. Ecrire le code en anglais.
+1. Tous les endpoints FastAPI doivent être typés avec Pydantic.
+2. Les agents LangGraph doivent avoir une méthode run(input: dict) -> dict.
+3. Respecter la structure de dossiers et le formatter Ruff.
+4. Préparer les modules pour être immédiatement compatibles avec LangSmith.
+5. Frontend minimaliste : Svelte + TailwindCSS, capable de consommer les endpoints FastAPI.
+6. Utiliser Poetry pour la gestion des dépendances et le packaging.
+"""
