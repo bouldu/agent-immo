@@ -5,28 +5,17 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class AnalyzeResponse(BaseModel):
-    """Response model for analyze endpoint."""
+class CityInfoData(BaseModel):
+    """City information data model."""
 
-    workflow_id: str = Field(..., description="Identifiant unique du workflow")
-
-
-class StatusResponse(BaseModel):
-    """Response model for status endpoint."""
-
-    workflow_id: str = Field(..., description="Identifiant unique du workflow")
-    status: str = Field(..., description="État actuel du workflow")
-    progress: float = Field(..., ge=0.0, le=1.0, description="Progression (0.0 à 1.0)")
-    results: dict[str, Any] | None = Field(
-        None, description="Résultats intermédiaires disponibles"
-    )
-    error: str | None = Field(None, description="Message d'erreur si échec")
+    situation: str = Field(..., description="Situation de la ville")
+    politique_color: str = Field(..., description="Couleur politique de la ville")
+    qualitative_presentation: str = Field(..., description="Présentation qualitative")
 
 
-class ReportResponse(BaseModel):
-    """Response model for report endpoint."""
+class CityInformationResponse(BaseModel):
+    """Response model for city information endpoint."""
 
-    workflow_id: str = Field(..., description="Identifiant unique du workflow")
-    pdf_bytes: bytes = Field(..., description="Contenu du PDF en bytes")
-    filename: str = Field(..., description="Nom du fichier PDF")
-
+    adress_in: str = Field(..., description="Adresse analysée")
+    messages: list[dict[str, Any]] = Field(default_factory=list, description="Messages de l'agent")
+    city_information: CityInfoData | None = Field(None, description="Informations sur la ville")

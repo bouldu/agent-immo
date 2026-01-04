@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.endpoints import analyze, report, status
+from backend.api.endpoints import city_information
 from backend.config import settings
 from backend.utils.langsmith_init import init_langsmith
 
@@ -26,9 +26,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(analyze.router, tags=["analyze"])
-app.include_router(status.router, tags=["status"])
-app.include_router(report.router, tags=["report"])
+app.include_router(city_information.router, tags=["city-information"])
 
 
 @app.get("/")
@@ -41,4 +39,3 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "healthy"}
-

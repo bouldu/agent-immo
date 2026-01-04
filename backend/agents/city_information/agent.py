@@ -4,7 +4,7 @@ from langchain_ollama import ChatOllama
 from backend.agents.city_information.prompt import PROMPT_CITY_INFORMATION
 from backend.agents.city_information.state import CityInformation
 from backend.agents.common_tools import extract_json_from_ai_message
-from backend.agents.state import MarketStudyState
+from backend.agents.state import CityInformationState
 
 llm = ChatOllama(
     model="gemma3",
@@ -13,7 +13,7 @@ llm = ChatOllama(
 )
 
 
-def city_information(state: MarketStudyState) -> MarketStudyState:
+def city_information(state: CityInformationState) -> CityInformationState:
     messages = [SystemMessage(PROMPT_CITY_INFORMATION), HumanMessage(state["adress_in"])]
 
     ai_msg = llm.invoke(messages)

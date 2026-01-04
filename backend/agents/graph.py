@@ -1,12 +1,12 @@
 from langgraph.graph import END, START, StateGraph
 
 from backend.agents.city_information.agent import city_information
-from backend.agents.state import MarketStudyState
+from backend.agents.state import CityInformationState
 
 
 # memory = InMemorySaver()
 def create_agent() -> StateGraph:
-    builder = StateGraph(MarketStudyState)
+    builder = StateGraph(CityInformationState)
 
     builder.add_node("city_information", city_information)
     builder.add_edge(START, "city_information")
@@ -17,4 +17,4 @@ def create_agent() -> StateGraph:
     return agent
 
 
-market_study_agent = create_agent()
+city_information_agent = create_agent()

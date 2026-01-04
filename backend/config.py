@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Frontend configuration
     frontend_url: str = "http://localhost:5173"
 
+    # OpenAI configuration
+    openai_api_key: str = ""
+
     class Config:
         """Pydantic config."""
 
@@ -30,9 +33,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-
-
-
-
-

@@ -1,8 +1,5 @@
 """API endpoints package."""
 
-from backend.api.endpoints import analyze, report, status
+from backend.api.endpoints import city_information
 
-__all__ = ["analyze", "report", "status"]
-
-
-
+__all__ = ["city_information"]

@@ -3,13 +3,7 @@
 from pydantic import BaseModel, Field
 
 
-class AnalyzeRequest(BaseModel):
-    """Request model for analyze endpoint."""
+class CityInformationRequest(BaseModel):
+    """Request model for city information endpoint."""
 
-    adresse: str = Field(..., description="Adresse à analyser", min_length=1)
-
-
-
-
-
-
+    adress_in: str = Field(..., description="Adresse à analyser", min_length=1)
