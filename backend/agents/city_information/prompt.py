@@ -9,10 +9,11 @@ agglomération si pertinent).
 - Toujours rester factuel.
 
 2. Couleur politique :
+- ATTENTION!!!!!!! : Cette information doit etre à jour. Utilise la recherche web pour trouver les
+informations les plus récentes, sois vraiment sur de ta réponse.
 - Nom du/de la maire actuel·le.
 - Appartenance politique (sigle).
 - Année de début du mandat en cours.
-- Si l'information est introuvable : indiquer pourquoi elle est introuvable.
 
 3. Présentation qualitative de la commune :
 - Description synthétique du caractère de la commune (5–7 lignes).

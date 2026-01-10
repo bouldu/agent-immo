@@ -1,22 +1,27 @@
+from langchain.agents import create_agent
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_ollama import ChatOllama
 
 from backend.agents.city_information.prompt import PROMPT_CITY_INFORMATION
 from backend.agents.city_information.state import CityInformation
-from backend.agents.common_tools import extract_json_from_ai_message
 from backend.agents.state import CityInformationState
 
-llm = ChatOllama(
-    model="gemma3",
-    temperature=0,
-    # other params...
+city_information_agent = create_agent(
+    "mistral-small-latest",
+    system_prompt=SystemMessage(PROMPT_CITY_INFORMATION),
+    tools=[DuckDuckGoSearchRun()],
+    response_format=CityInformation,
 )
 
 
-def city_information(state: CityInformationState) -> CityInformationState:
-    messages = [SystemMessage(PROMPT_CITY_INFORMATION), HumanMessage(state["adress_in"])]
+def get_city_information(city_name: str) -> CityInformationState:
+    messages = [HumanMessage(city_name)]
 
-    ai_msg = llm.invoke(messages)
+    ai_response = city_information_agent.invoke({"messages": messages})
 
-    json_content: CityInformation = extract_json_from_ai_message(ai_msg)
-    return {**state, "city_information": json_content}
+    # ai_messages = ai_response["messages"]
+    # print(ai_messages)
+
+    city_information: CityInformationState = ai_response["structured_response"]
+
+    return city_information
