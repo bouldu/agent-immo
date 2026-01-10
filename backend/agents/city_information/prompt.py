@@ -12,7 +12,7 @@ agglomération si pertinent).
 - Nom du/de la maire actuel·le.
 - Appartenance politique (sigle).
 - Année de début du mandat en cours.
-- Si l'information est introuvable : indiquer "information non disponible".
+- Si l'information est introuvable : indiquer pourquoi elle est introuvable.
 
 3. Présentation qualitative de la commune :
 - Description synthétique du caractère de la commune (5–7 lignes).
