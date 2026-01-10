@@ -16,7 +16,7 @@ AgentImmo est une application permettant aux promoteurs immobiliers d’analyser
 - Observabilité : LangSmith
 - Frontend : Svelte + TailwindCSS
 - Formatter : Ruff
-- Gestionnaire de dépendances : Poetry
+- Gestionnaire de dépendances : uv
 - Stockage : PostgreSQL / PostGIS
 
 ## Agents LangGraph
@@ -46,15 +46,15 @@ AgentImmo est une application permettant aux promoteurs immobiliers d’analyser
 ### Prérequis
 
 - Python 3.10+
-- Poetry
+- uv
 - Node.js 18+ et npm
 
 ### Backend
 
-1. Installer les dépendances avec Poetry :
+1. Installer les dépendances avec uv :
 
 ```bash
-poetry install
+uv sync
 ```
 
 2. Configurer les variables d'environnement :
@@ -67,7 +67,7 @@ cp .env.example .env
 3. Lancer le serveur FastAPI :
 
 ```bash
-poetry run uvicorn backend.api.main:app --reload
+uv run uvicorn backend.api.main:app --reload
 ```
 
 L'API sera accessible sur `http://localhost:8000`
@@ -131,7 +131,7 @@ agent-immo/
 │   └── workflow.py        # Orchestrateur de workflow
 ├── frontend/              # Application Svelte
 ├── tests/                 # Tests unitaires
-└── pyproject.toml         # Configuration Poetry
+└── pyproject.toml         # Configuration Python
 ```
 
 ## Développement
@@ -141,8 +141,8 @@ agent-immo/
 Utiliser Ruff pour formater le code :
 
 ```bash
-poetry run ruff format .
-poetry run ruff check .
+uv run ruff format .
+uv run ruff check .
 ```
 
 ### Tests
@@ -150,7 +150,7 @@ poetry run ruff check .
 Lancer les tests :
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ## Notes
