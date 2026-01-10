@@ -4,7 +4,7 @@
   import { link } from 'svelte-spa-router';
   import { getCityInformation } from '../lib/api.js';
 
-  let address = '';
+  let city = '';
   let loading = false;
   let error = null;
   let result = null;
@@ -143,24 +143,20 @@
       searchBox.addEventListener('retrieve', async (e) => {
         try {
           const response = e.detail;
-          let selectedAddress = '';
+          let selectedCity = '';
           
           // La réponse de MapboxSearchBox est une SearchBoxRetrieveResponse
           // qui contient une FeatureCollection avec les features
           if (response && response.features && Array.isArray(response.features) && response.features.length > 0) {
             const feature = response.features[0];
-            // Utiliser full_address qui contient l'adresse complète formatée
-            selectedAddress = feature.properties?.full_address || 
-                            feature.properties?.place_formatted || 
-                            feature.properties?.name || 
-                            searchBox.value || '';
+            selectedCity = feature.properties?.context.place.name || '';
           } else {
             // Fallback sur la valeur du champ
-            selectedAddress = searchBox.value || '';
+            selectedCity = searchBox.value || '';
           }
           
-          if (selectedAddress && selectedAddress.trim()) {
-            address = selectedAddress.trim();
+          if (selectedCity && selectedCity.trim()) {
+            city = selectedCity.trim();
             // Déclencher automatiquement la recherche
             await handleSubmit();
           }
@@ -169,7 +165,7 @@
           // En cas d'erreur, utiliser au moins la valeur du champ
           const currentValue = searchBox?.value || '';
           if (currentValue.trim()) {
-            address = currentValue.trim();
+            city = currentValue.trim();
           }
         }
       });
@@ -177,13 +173,25 @@
       // Mise à jour de la variable address quand l'utilisateur tape
       searchBox.addEventListener('input', (e) => {
         if (e.target === searchBox.input) {
-          address = searchBox.value;
+          city = searchBox.value;
         }
       });
 
       // Ajouter le widget au conteneur (une seule fois)
       if (searchBoxContainer && !searchBoxContainer.contains(searchBox)) {
         searchBoxContainer.appendChild(searchBox);
+        
+        // Préremplir avec l'adresse de debug si définie
+        const debugAddress = import.meta.env.VITE_DEBUG_ADDRESS;
+        if (debugAddress && debugAddress.trim()) {
+          // Attendre que le widget soit complètement initialisé
+          await new Promise(resolve => setTimeout(resolve, 100));
+          if (searchBox && searchBox.input) {
+            searchBox.value = debugAddress.trim();
+            city = debugAddress.trim();
+            console.log('[DEBUG] Adresse préremplie:', debugAddress);
+          }
+        }
       }
     }
   });
@@ -200,14 +208,14 @@
   });
 
   const handleSubmit = async () => {
-    if (!address.trim()) return;
+    if (!city.trim()) return;
     
     loading = true;
     error = null;
     result = null;
 
     try {
-      result = await getCityInformation(address);
+      result = await getCityInformation(city);
     } catch (err) {
       error = err.response?.data?.detail || err.message || 'Erreur lors de la récupération des informations';
       console.error('Error fetching city information:', err);
@@ -291,7 +299,7 @@
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !address.trim()}
+                  disabled={loading || !city.trim()}
                   class="px-8 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 flex-shrink-0 rounded-r-2xl z-10"
                 >
                   {#if loading}
@@ -324,14 +332,14 @@
               </div>
               <input
                 type="text"
-                bind:value={address}
+                bind:value={city}
                 placeholder="Entrez une adresse (ex: 15 rue de la Paix, Paris)"
                 class="flex-1 px-4 py-5 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg"
                 disabled={loading}
               />
               <button
                 type="submit"
-                disabled={loading || !address.trim()}
+                disabled={loading || !city.trim()}
                 class="px-8 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
               >
                 {#if loading}

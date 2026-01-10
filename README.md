@@ -89,6 +89,9 @@ Créez un fichier `.env` dans le dossier `frontend` avec votre clé d'accès Map
 # Dans frontend/.env
 VITE_MAPBOX_ACCESS_TOKEN=votre_clé_mapbox_ici
 VITE_API_URL=http://localhost:8000
+
+# Optionnel : Adresse de debug pour préremplir le champ (évite de consommer l'API Mapbox en développement)
+VITE_DEBUG_ADDRESS=25 Rue d'Antrain, 35700 Rennes, France
 ```
 
 Pour obtenir une clé Mapbox :
