@@ -1,11 +1,203 @@
 <script>
-  import { getCityInformation } from '../lib/api.js';
+  import { MapboxSearchBox } from '@mapbox/search-js-web';
+  import { onDestroy, onMount } from 'svelte';
   import { link } from 'svelte-spa-router';
+  import { getCityInformation } from '../lib/api.js';
 
   let address = '';
   let loading = false;
   let error = null;
   let result = null;
+  let searchBoxContainer;
+  let searchBox;
+  let mapboxConfigured = true;
+
+  onMount(async () => {
+    if (!searchBoxContainer) return;
+    
+    const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    
+    if (!mapboxToken) {
+      mapboxConfigured = false;
+      error = 'La clé API Mapbox n\'est pas configurée. Veuillez ajouter VITE_MAPBOX_ACCESS_TOKEN dans votre fichier .env du frontend. Consultez le README pour plus d\'informations.';
+      console.warn('VITE_MAPBOX_ACCESS_TOKEN n\'est pas configuré. Veuillez ajouter votre clé Mapbox dans un fichier .env');
+      return;
+    }
+
+    // S'assurer que le conteneur est vide avant d'ajouter le widget (éviter les doublons)
+    if (searchBoxContainer.hasChildNodes()) {
+      searchBoxContainer.innerHTML = '';
+    }
+
+    // Attendre que le DOM soit complètement rendu
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Ne créer le widget qu'une seule fois
+    if (!searchBox || !searchBoxContainer.contains(searchBox)) {
+      searchBox = new MapboxSearchBox();
+      searchBox.accessToken = mapboxToken;
+      searchBox.options = {
+        language: 'fr',
+        country: 'FR'
+      };
+      searchBox.placeholder = 'Entrez une adresse (ex: 15 rue de la Paix, Paris)';
+      searchBox.interceptSearch = (val) => {
+        if (val && val.trim().length >= 3) {
+          return val.trim();
+        }
+        return null;
+      };
+
+      // Configuration du popover pour que les suggestions s'affichent correctement
+      // Note: Le widget utilise floating-ui pour positionner les suggestions
+      searchBox.popoverOptions = {
+        placement: 'bottom-start',
+        flip: true,
+        shift: false,
+        offset: 8
+      };
+
+      // Configuration du thème pour correspondre au design sombre
+      // Note: Le widget Mapbox utilise Shadow DOM, donc les styles doivent être appliqués via le thème
+      searchBox.theme = {
+        variables: {
+          colorPrimary: '#06b6d4',
+          colorPrimaryFocus: '#0891b2',
+          colorBackground: '#1e293b',
+          colorBackgroundHover: '#334155',
+          colorText: '#f1f5f9',
+          colorTextSecondary: '#94a3b8',
+          colorBorder: '#475569',
+          borderRadius: '0px'
+        },
+        cssText: `
+          :host {
+            display: block !important;
+            width: 100% !important;
+            min-height: 80px !important;
+            position: relative !important;
+          }
+          .Input {
+            background-color: transparent !important;
+            color: #f1f5f9 !important;
+            border: none !important;
+            padding: 1.25rem 1rem !important;
+            font-size: 1.125rem !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            outline: none !important;
+          }
+          .Input::placeholder {
+            color: #64748b !important;
+            opacity: 1 !important;
+          }
+          .Input:focus {
+            outline: none !important;
+            box-shadow: none !important;
+          }
+          .Listbox {
+            background-color: #1e293b !important;
+            border: 1px solid #475569 !important;
+            border-radius: 12px !important;
+            margin-top: 0.5rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
+            z-index: 10000 !important;
+            max-height: 400px !important;
+            overflow-y: auto !important;
+            padding: 0.5rem 0 !important;
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin-top: 0.5rem !important;
+          }
+          .ListboxOption {
+            color: #f1f5f9 !important;
+            padding: 0.875rem 1.25rem !important;
+            cursor: pointer !important;
+            transition: background-color 0.15s ease !important;
+          }
+          .ListboxOption:hover {
+            background-color: #334155 !important;
+          }
+          .ListboxOption[aria-selected="true"] {
+            background-color: rgba(6, 182, 212, 0.2) !important;
+            border-left: 3px solid #06b6d4 !important;
+          }
+          .ListboxOption[aria-selected="true"]:hover {
+            background-color: rgba(6, 182, 212, 0.3) !important;
+          }
+          .ListboxOptionText {
+            color: #f1f5f9 !important;
+            font-size: 1rem !important;
+          }
+          .ListboxOptionTextSecondary {
+            color: #94a3b8 !important;
+            font-size: 0.875rem !important;
+          }
+        `
+      };
+
+      // Gestionnaire d'événement pour la sélection d'une adresse
+      searchBox.addEventListener('retrieve', async (e) => {
+        try {
+          const response = e.detail;
+          let selectedAddress = '';
+          
+          // La réponse de MapboxSearchBox est une SearchBoxRetrieveResponse
+          // qui contient une FeatureCollection avec les features
+          if (response && response.features && Array.isArray(response.features) && response.features.length > 0) {
+            const feature = response.features[0];
+            // Utiliser full_address qui contient l'adresse complète formatée
+            selectedAddress = feature.properties?.full_address || 
+                            feature.properties?.place_formatted || 
+                            feature.properties?.name || 
+                            searchBox.value || '';
+          } else {
+            // Fallback sur la valeur du champ
+            selectedAddress = searchBox.value || '';
+          }
+          
+          if (selectedAddress && selectedAddress.trim()) {
+            address = selectedAddress.trim();
+            // Déclencher automatiquement la recherche
+            await handleSubmit();
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération de l\'adresse:', err);
+          // En cas d'erreur, utiliser au moins la valeur du champ
+          const currentValue = searchBox?.value || '';
+          if (currentValue.trim()) {
+            address = currentValue.trim();
+          }
+        }
+      });
+
+      // Mise à jour de la variable address quand l'utilisateur tape
+      searchBox.addEventListener('input', (e) => {
+        if (e.target === searchBox.input) {
+          address = searchBox.value;
+        }
+      });
+
+      // Ajouter le widget au conteneur (une seule fois)
+      if (searchBoxContainer && !searchBoxContainer.contains(searchBox)) {
+        searchBoxContainer.appendChild(searchBox);
+      }
+    }
+  });
+
+  onDestroy(() => {
+    if (searchBox && searchBoxContainer) {
+      // Supprimer le widget du DOM et nettoyer
+      if (searchBox.parentNode === searchBoxContainer) {
+        searchBoxContainer.removeChild(searchBox);
+      }
+      // Nettoyer les event listeners si nécessaire
+      searchBox = null;
+    }
+  });
 
   const handleSubmit = async () => {
     if (!address.trim()) return;
@@ -82,44 +274,83 @@
     </header>
 
     <!-- Search Form -->
-    <div class="max-w-2xl mx-auto mb-12">
-      <form on:submit|preventDefault={handleSubmit} class="relative">
-        <div class="relative group">
-          <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-          <div class="relative flex bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/50">
-            <div class="flex items-center pl-5 text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-              </svg>
+    <div class="max-w-2xl mx-auto mb-12 search-form-wrapper">
+      {#if mapboxConfigured}
+        <form on:submit|preventDefault={handleSubmit} class="relative">
+          <div class="relative group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+            <div class="relative bg-slate-800 rounded-2xl border border-slate-700/50 overflow-visible">
+              <div class="flex items-stretch min-h-[80px]">
+                <div class="flex items-center justify-center pl-5 text-slate-400 flex-shrink-0 z-10">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="flex-1 relative min-h-[80px]" bind:this={searchBoxContainer} style="overflow: visible;">
+                  <!-- Le widget Mapbox sera injecté ici -->
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !address.trim()}
+                  class="px-8 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 flex-shrink-0 rounded-r-2xl z-10"
+                >
+                  {#if loading}
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Analyse...</span>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Analyser</span>
+                  {/if}
+                </button>
+              </div>
             </div>
-            <input
-              type="text"
-              bind:value={address}
-              placeholder="Entrez une adresse (ex: 15 rue de la Paix, Paris)"
-              class="flex-1 px-4 py-5 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !address.trim()}
-              class="px-8 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
-            >
-              {#if loading}
-                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Analyse...</span>
-              {:else}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                </svg>
-                <span>Analyser</span>
-              {/if}
-            </button>
           </div>
-        </div>
-      </form>
+        </form>
+      {:else}
+        <!-- Fallback si Mapbox n'est pas configuré -->
+        <form on:submit|preventDefault={handleSubmit} class="relative">
+          <div class="relative group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+            <div class="relative flex bg-slate-800 rounded-2xl overflow-hidden border border-slate-700/50">
+              <div class="flex items-center pl-5 text-slate-400 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                bind:value={address}
+                placeholder="Entrez une adresse (ex: 15 rue de la Paix, Paris)"
+                class="flex-1 px-4 py-5 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={loading || !address.trim()}
+                class="px-8 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
+              >
+                {#if loading}
+                  <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Analyse...</span>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Analyser</span>
+                {/if}
+              </button>
+            </div>
+          </div>
+        </form>
+      {/if}
     </div>
 
     <!-- Error Display -->
@@ -262,6 +493,44 @@
 
   .prose p {
     white-space: pre-wrap;
+  }
+
+  /* Styles pour l'intégration du widget Mapbox */
+  .search-form-wrapper {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Permettre l'overflow visible pour que les suggestions s'affichent */
+  .search-form-wrapper :global(.relative.group) {
+    overflow: visible !important;
+  }
+
+  .search-form-wrapper :global(.relative.bg-slate-800) {
+    overflow: visible !important;
+  }
+
+  /* Style pour le widget Mapbox - s'assurer qu'il n'y a pas de duplication */
+  .search-form-wrapper :global([data-mapbox-search-box]),
+  .search-form-wrapper :global(mapbox-search-box) {
+    width: 100% !important;
+    min-height: 80px !important;
+    display: block !important;
+    flex: 1 1 auto !important;
+    position: relative !important;
+  }
+
+  /* S'assurer que le conteneur du widget n'a pas d'overflow et qu'il ne crée pas de duplication */
+  .search-form-wrapper :global(.flex-1.relative) {
+    overflow: visible !important;
+    position: relative !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Empêcher la duplication des inputs dans le Shadow DOM */
+  .search-form-wrapper :global([data-mapbox-search-box]::part(input)),
+  .search-form-wrapper :global(mapbox-search-box::part(input)) {
+    display: block !important;
   }
 </style>
 

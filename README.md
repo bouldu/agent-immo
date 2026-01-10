@@ -81,7 +81,23 @@ cd frontend
 npm install
 ```
 
-2. Lancer le serveur de développement :
+2. Configurer la clé API Mapbox :
+
+Créez un fichier `.env` dans le dossier `frontend` avec votre clé d'accès Mapbox :
+
+```bash
+# Dans frontend/.env
+VITE_MAPBOX_ACCESS_TOKEN=votre_clé_mapbox_ici
+VITE_API_URL=http://localhost:8000
+```
+
+Pour obtenir une clé Mapbox :
+
+- Créez un compte sur [https://account.mapbox.com/](https://account.mapbox.com/)
+- Accédez à votre page d'accès (Access tokens)
+- Copiez votre token public (commence par `pk.`)
+
+3. Lancer le serveur de développement :
 
 ```bash
 npm run dev

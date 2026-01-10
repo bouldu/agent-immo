@@ -21,7 +21,6 @@ async def city_information(request: CityInformationRequest) -> CityInformationRe
         CityInformationResponse with complete city information state
     """
     try:
-        # Initialize state
         initial_state: dict = {
             "adress_in": request.adress_in,
             "messages": [],
@@ -32,10 +31,8 @@ async def city_information(request: CityInformationRequest) -> CityInformationRe
             },
         }
 
-        # Execute agent
         result_state = await city_information_agent.ainvoke(initial_state)
 
-        # Convert messages to dict format for JSON serialization
         messages_dict = []
         if result_state.get("messages"):
             for msg in result_state["messages"]:
@@ -44,7 +41,6 @@ async def city_information(request: CityInformationRequest) -> CityInformationRe
                 else:
                     messages_dict.append(str(msg))
 
-        # Convert city_information to response model
         city_info_response = None
         if result_state.get("city_information"):
             city_info = result_state["city_information"]
